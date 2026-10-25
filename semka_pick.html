@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Координаты точек — semka.jpg</title>
+<style>
+  body { font-family: monospace; margin: 0; background: #111; color: #eee; }
+  #wrap { position: relative; }
+  #img { display: block; max-width: 100%; cursor: crosshair; user-select: none; }
+  #log { position: fixed; top: 10px; right: 10px; width: 360px;
+         background: rgba(0,0,0,0.92); padding: 12px; border-radius: 8px;
+         max-height: 85vh; overflow-y: auto; z-index: 10; }
+  .pt { color: #0f0; padding: 2px 0; }
+  button { margin-top: 8px; margin-right: 6px; padding: 5px 10px;
+           cursor: pointer; border-radius: 4px; border: none; }
+  small { color: #aaa; }
+  hr { border-color: #333; }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <img id="img" src="semka_preview.jpg" alt="map">
+</div>
+<div id="log">
+  <b>Кликните по карте</b><br>
+  <small>Размер: 1024 × 702 px</small>
+  <hr>
+  <div id="list"></div>
+  <button onclick="copyAll()">Скопировать все</button>
+  <button onclick="clearAll()">Очистить</button>
+</div>
+<script>
+  const W = 1024, H = 702;
+  const img = document.getElementById('img');
+  const list = document.getElementById('list');
+  const pts = [];
+
+  img.addEventListener('load', function() {
+    console.log('Карта загружена: ' + img.naturalWidth + '×' + img.naturalHeight);
+  });
+  img.addEventListener('error', function() {
+    alert('Карта не загрузилась. Проверьте файл semka_preview.jpg рядом с HTML.');
+  });
+
+  img.addEventListener('click', function(e) {
+    const rect = img.getBoundingClientRect();
+    const x = Math.round((e.clientX - rect.left) * W / img.width);
+    const y = Math.round((e.clientY - rect.top) * H / img.height);
+    pts.push([x, y]);
+    const div = document.createElement('div');
+    div.className = 'pt';
+    div.textContent = '#' + pts.length + ': ' + x + ',' + y;
+    list.appendChild(div);
+    // рисуем точку поверх карты
+    const marker = document.createElement('div');
+    marker.style.cssText = 'position:absolute;width:12px;height:12px;' +
+      'background:red;border:2px solid yellow;border-radius:50%;' +
+      'pointer-events:none;transform:translate(-50%,-50%);';
+    marker.style.left = e.clientX - rect.left + 'px';
+    marker.style.top = e.clientY - rect.top + 'px';
+    marker.dataset.pid = pts.length;
+    document.getElementById('wrap').appendChild(marker);
+  });
+
+  function copyAll() {
+    if (pts.length === 0) { alert('Нет точек'); return; }
+    const text = pts.map(function(p) { return p.join(','); }).join('\n');
+    navigator.clipboard.writeText(text).then(function() {
+      alert('Скопировано:\n' + text);
+    });
+  }
+  function clearAll() {
+    pts.length = 0;
+    list.innerHTML = '';
+    document.querySelectorAll('#wrap div').forEach(function(d) { d.remove(); });
+  }
+</script>
+</body>
+</html>

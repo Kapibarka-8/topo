@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+*_grid.png
+*_edges.png
+*_measure.png
+*.json
+.DS_Store
