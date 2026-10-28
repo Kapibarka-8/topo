@@ -1,5 +1,9 @@
 opencv-python-headless
 numpy
 easyocr
-pdf2image
 pillow
+streamlit
+plotly
+scipy
+PyMuPDF
+pandas
