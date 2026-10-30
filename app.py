@@ -172,6 +172,7 @@ _init("inspect_info", None)
 _init("map2d_last_click", None)
 _init("manual_click", None)
 _init("ocr_running", False)
+_init("current_file_name", None) # <--- ДОБАВЛЕНО ДЛЯ ОТСЛЕЖИВАНИЯ НОВОГО ФАЙЛА
 
 
 # ============== Sidebar ==============
@@ -196,6 +197,13 @@ if use_anchor:
 else:
     st.session_state.anchor = None
 
+# Кнопка ручной очистки (на всякий случай)
+if st.sidebar.button("🧹 Очистить все точки"):
+    st.session_state.points_df = pd.DataFrame(
+        columns=["id", "value", "x_px", "y_px", "confidence", "source"])
+    st.session_state.point_counter = 0
+    st.rerun()
+
 if st.session_state.ocr_running:
     st.sidebar.warning("⏳ **OCR работает...** Это может занять 30–90 секунд. "
                        "Не закрывайте вкладку.")
@@ -216,6 +224,20 @@ uploaded = st.file_uploader(
 )
 
 if uploaded:
+    # === СБРОС ДАННЫХ ПРИ ЗАГРУЗКЕ НОВОГО ФАЙЛА ===
+    if st.session_state.current_file_name != uploaded.name:
+        st.session_state.current_file_name = uploaded.name
+        st.session_state.points_df = pd.DataFrame(
+            columns=["id", "value", "x_px", "y_px", "confidence", "source"])
+        st.session_state.point_counter = 0
+        st.session_state.manual_click = None
+        st.session_state.click_A = None
+        st.session_state.click_B = None
+        st.session_state.inspect_info = None
+        st.session_state.map2d_last_click = None
+        st.success(f"Загружена новая карта: {uploaded.name}. Старые точки сброшены.")
+    # ===============================================
+
     ext = os.path.splitext(uploaded.name)[1]
     with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as f:
         f.write(uploaded.getvalue())
@@ -372,7 +394,6 @@ if st.session_state.img_bgr is not None:
 
         df_manual = st.session_state.points_df.dropna(subset=["value", "x_px", "y_px"])
 
-        # Масштабируем карту для быстрой работы
         disp_h = int(img.shape[0] * zoom_manual)
         disp_w = int(img.shape[1] * zoom_manual)
         disp_img = cv2.resize(img, (disp_w, disp_h), interpolation=cv2.INTER_AREA)
@@ -391,12 +412,9 @@ if st.session_state.img_bgr is not None:
                            markerType=cv2.MARKER_CROSS, markerSize=20, thickness=2)
 
         vis_pil = Image.fromarray(cv2.cvtColor(vis_manual, cv2.COLOR_BGR2RGB))
-        
-        # Возвращаем стандартный вывод без контейнеров, чтобы клики работали
         click = streamlit_image_coordinates(vis_pil, key="manual_click_widget")
 
         if click is not None:
-            # Переводим координаты клика обратно в реальные координаты оригинальной карты
             real_x = int(click["x"] / zoom_manual)
             real_y = int(click["y"] / zoom_manual)
             coords = (real_x, real_y)
