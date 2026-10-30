@@ -7,3 +7,5 @@ plotly
 scipy
 PyMuPDF
 pandas
+openpyxl
+streamlit-image-coordinates
